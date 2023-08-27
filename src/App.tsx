@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
-import * as yup from "yup";
-import { yupResolver } from "@hookform/resolvers/yup";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export type FormTypeValidationValue =
   | { message: string; value: any }
@@ -23,39 +23,21 @@ export interface FormValues {
   gender: string;
 }
 
-const formValidation = yup
-  .object()
-  .shape({
-    username: yup
-      .string()
-      .test(
-        "minLength",
-        "the character must be more than 3 character",
-        (val: any) => val.length >= 3
-      )
-      .required("the username is required"),
-    email: yup
-      .string()
-      .email("email format is incorrect")
-      .required("email is required"),
-    password: yup
-      .string()
-      .test(
-        "minLen",
-        "the password should contain more than 8 character",
-        (val: any) => val.length >= 8
-      )
-      .required("password is required"),
-    isMarried: yup.bool().required("isMarried is required"),
-    gender: yup
-      .string()
-      .test(
-        "checkGender",
-        "enter valid gender",
-        (val: any) => !val || !["Male", "Female"].includes(val)
-      ),
-  })
-  .required();
+const formValidation = z.object({
+  username: z
+    .string()
+    .min(3, "the character must be more than 3 character")
+    .nonempty("the username is required"),
+  email: z
+    .string()
+    .email("email format is incorrect")
+    .nonempty("email is required"),
+  password: z
+    .string()
+    .min(8, "the password should contain more than 8 character")
+    .nonempty("password is required"),
+  gender: z.union([z.literal("male"), z.literal("female")]),
+});
 
 const forms: FormType[] = [
   {
@@ -63,48 +45,18 @@ const forms: FormType[] = [
     text: "Username",
     id: "username",
     type: "text",
-    // rules: {
-    //   required: {
-    //     value: true,
-    //     message: "the username is required",
-    //   },
-    //   minLength: {
-    //     value: 3,
-    //     message: "your username must contain at least 3 character",
-    //   },
-    // },
   },
   {
     name: "email",
     text: "Email Address",
     id: "email",
     type: "email",
-    // rules: {
-    //   required: {
-    //     value: true,
-    //     message: "the email address is required",
-    //   },
-    //   pattern: {
-    //     value: /[a-z0-9]+@[a-z]+.[a-z]{2,3}/,
-    //     message: "email is incorrect format",
-    //   },
-    // },
   },
   {
     name: "password",
     text: "Password",
     id: "password",
     type: "password",
-    // rules: {
-    //   required: {
-    //     value: true,
-    //     message: "the password is required",
-    //   },
-    //   minLength: {
-    //     value: 8,
-    //     message: "your password must contain at least 8 character",
-    //   },
-    // },
   },
   {
     name: "isMarried",
@@ -115,11 +67,6 @@ const forms: FormType[] = [
   {
     type: "radio",
     name: "gender",
-    // rules: {
-    //   validate: (value: any) => {
-    //     if (!value) return "enter your gender";
-    //   },
-    // },
     options: [
       {
         text: "Male",
@@ -137,7 +84,7 @@ export default function App() {
   const { register, formState, handleSubmit } = useForm<FormValues>({
     criteriaMode: "firstError",
     reValidateMode: "onChange",
-    resolver: yupResolver(formValidation) as any,
+    resolver: zodResolver(formValidation) as any,
   });
 
   const onSubmit = (data: FormValues) => {
